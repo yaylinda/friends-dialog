@@ -21,11 +21,12 @@ def parse_json(season, json_file):
     episode_num = int(episode['episode_id'].split('_e')[1])
     for scene in episode['scenes']:
       for utterance in scene['utterances']:
-        for speakers in utterance['speakers']:
+        for speaker in utterance['speakers']:
           transcript = utterance['transcript']
           season_data.append({
             'season': season,
             'episode': episode_num,
+            'character': speaker,
             'transcript': transcript,
             'num_words': len(transcript.split(' '))
           })
