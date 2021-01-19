@@ -3,13 +3,15 @@ setwd("/Users/lindazheng/Developer/friends-dialog")
 library(ggplot2)
 library(RColorBrewer)
 library(ggthemes)
+library(treemapify)
+library(stringr)
 
 data = read.csv("data.csv")
 data$character[data$character == "Rachel Green"] = "Rachel"
-data$character[data$character == "Ross Geller"] = "Ross  "
+data$character[data$character == "Ross Geller"] = "Ross"
 data$character[data$character == "Chandler Bing"] = "Chandler"
-data$character[data$character == "Joey Tribbiani"] = "Joey  "
-data$character[data$character == "Monica Geller"] = "Monica  "
+data$character[data$character == "Joey Tribbiani"] = "Joey"
+data$character[data$character == "Monica Geller"] = "Monica"
 data$character[data$character == "Phoebe Buffay"] = "Phoebe"
 data$character[data$character == "Amy Green"] = "Amy G."
 
@@ -161,3 +163,136 @@ ggsave(
   device = "png",
   units = "in"
 )
+
+#--------------------------------------
+# Plot 2
+#--------------------------------------
+
+main_characters = c(
+  "Ross",
+  "Rachel",
+  "Joey",
+  "Phoebe",
+  "Chandler",
+  "Monica"
+)
+
+main_characters_and_other = c(
+  main_characters, 
+  "Other"
+)
+
+words_per_character_per_episode$label = ifelse(
+  words_per_character_per_episode$character %in% main_characters,
+  words_per_character_per_episode$character,
+  "Other"
+)
+
+words_per_character_per_episode$label = factor(
+  words_per_character_per_episode$label, 
+  labels = main_characters_and_other
+)
+
+words_per_label_per_episode = aggregate(
+  words_per_character_per_episode$x,
+  by = list(
+    label = words_per_character_per_episode$label,
+    season = words_per_character_per_episode$season,
+    episode = words_per_character_per_episode$episode
+  ),
+  sum
+)
+
+words_per_label_per_episode$label = factor(
+  words_per_label_per_episode$label, 
+  labels = main_characters_and_other
+)
+
+words_per_label_per_episode$season = paste(
+  "Season ",
+  words_per_label_per_episode$season,
+  sep = ""
+)
+
+words_per_label_per_episode$season = factor(
+  words_per_label_per_episode$season,
+  levels = str_sort(unique(words_per_label_per_episode$season), numeric = TRUE)
+)
+
+words_per_label_per_episode$episode = paste(
+  "Episode ",
+  words_per_label_per_episode$episode,
+  sep = ""
+)
+
+words_per_label_per_episode$episode = factor(
+  words_per_label_per_episode$episode,
+  levels = str_sort(unique(words_per_label_per_episode$episode), numeric = TRUE)
+)
+
+ggplot(
+  words_per_label_per_episode,
+  aes(
+    area = x,
+    label = label,
+    fill = label
+  )
+) + 
+  geom_treemap(
+    
+  ) +
+  geom_treemap_text(
+    family = "mono",
+    color = "black",
+    place = "center"
+  ) + 
+  facet_grid(
+    episode ~ season,
+    switch = "y", 
+    space = "free", 
+  ) +
+  coord_equal(
+    
+  ) +
+  labs(
+    title = "The One with the Talkative Friends",
+    subtitle = "Proportion of words spoken by each character, in each episode.",
+    caption = "",
+    fill = ""
+  ) + 
+  scale_fill_manual(
+    values = brewer.pal(
+      n = length(main_characters_and_other), 
+      name = "Accent"
+    ),
+    breaks = main_characters_and_other,
+    labels = main_characters_and_other
+  ) + 
+  theme(
+    text = element_text(family = "mono"),
+    panel.grid.major = element_blank(), 
+    panel.grid.minor = element_blank(), 
+    axis.ticks = element_blank(),
+    axis.line = element_blank(),
+    axis.title = element_blank(),
+    strip.text.y.left = element_text(angle = 0),
+    strip.text = element_text(size = rel(1), face = "bold"),
+    plot.background = element_rect(fill="aliceblue", color = NA),
+    plot.title = element_text(size = rel(3), face = "bold", margin = margin(b = 10)),
+    plot.subtitle = element_text(size = rel(1.5), hjust = 0, margin = margin(t = 0, r = 0, b = 20, l = 0)),
+    plot.margin = margin(t = 20, r = 20, b = 20, l = 20),
+    legend.margin = margin(t = 0, r = 0, b = 0, l = 10),
+    legend.background = element_rect(fill="aliceblue", color = NA),
+    legend.text = element_text(size = rel(1.5), face = "bold")
+  )
+
+ggsave(
+  paste("plot_proportion.png", sep = ""),
+  path = "~/Developer/friends-dialog",
+  dpi = 320,
+  width = 16,
+  height = 24,
+  device = "png",
+  units = "in"
+)
+
